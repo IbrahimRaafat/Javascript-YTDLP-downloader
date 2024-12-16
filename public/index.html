@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Video Downloader</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    #download-form {
+      margin-bottom: 20px;
+    }
+    #progress {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>YouTube Video Downloader</h1>
+
+  <!-- Input form for YouTube URL -->
+  <div id="download-form">
+    <label for="url">Enter Video URL: </label>
+    <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=xyz">
+    <button id="download-btn">Download</button>
+  </div>
+
+  <!-- Display download progress -->
+  <div id="progress">
+    <div>Progress: <span id="progress-bar">0%</span></div>
+    <div>Speed: <span id="speed">N/A</span></div>
+    <div>ETA: <span id="eta">N/A</span></div>
+  </div>
+
+  <!-- Display messages -->
+  <div id="message"></div>
+
+  <script>
+    const socket = io(); // Connect to the server
+
+    // Get references to HTML elements
+    const downloadButton = document.getElementById("download-btn");
+    const urlInput = document.getElementById("url");
+    const progressBar = document.getElementById("progress-bar");
+    const speedText = document.getElementById("speed");
+    const etaText = document.getElementById("eta");
+    const messageDiv = document.getElementById("message");
+
+    // Handle the download button click event
+    downloadButton.addEventListener("click", () => {
+      const url = urlInput.value;
+      if (url) {
+        socket.emit("download", url); // Send URL to server for download
+        messageDiv.innerHTML = "Starting download...";
+      }
+    });
+
+    // Handle progress updates from server
+    socket.on("progress", (progress) => {
+      if (progress.percent !== undefined) {
+        progressBar.innerText = `${(progress.percent * 100).toFixed(2)}%`;
+        speedText.innerText = `${(progress.currentSpeed / 1024).toFixed(2)} KB/s`;
+        etaText.innerText = `${Math.floor(progress.eta)}s`;
+      }
+    });
+
+    // Handle completion message from server
+    socket.on("completed", (message) => {
+      messageDiv.innerHTML = message;
+    });
+
+    // Handle error messages from server
+    socket.on("error", (error) => {
+      messageDiv.innerHTML = `Error: ${error}`;
+    });
+  </script>
+
+</body>
+</html>
